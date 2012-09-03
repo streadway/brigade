@@ -4,7 +4,7 @@ Demultiplexes an S3 bucket listing across multiple consumers in order to paralle
 
 # Usage
 
-```
+```sh
 ./brigade --http :8080
 
 job=`date +%s` # increment for a new run, can be anything unique
@@ -12,6 +12,10 @@ for host in hostA hostB hostC; do
   ssh $host -- curl "http://`hostname`:8080/your-bucket-name/$job" | process-bucket-keys" &
 done
 ```
+
+# Status
+
+Under development
 
 # Requests
 
@@ -61,12 +65,14 @@ Each streaming JSON object will represent the "Contents" section of the paged
 bucket listing, defined in
 http://docs.amazonwebservices.com/AmazonS3/latest/API/RESTBucketGET.html
 
+```json
 {
   "key": "name-of-object/in/bucket",
   "lastModified": "2010-10-20T21:38:07.000Z",
   "eTag": "\"2bbd1d84df61f9662d859326a6ed0972\"",
   "size": 5024,
 }
+```
 
 # TODO
 
