@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"encoding/xml"
-	"strconv"
+	"expvar"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -11,9 +11,9 @@ import (
 	"math"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
-	"expvar"
 	"time"
 )
 
@@ -49,12 +49,12 @@ type feed struct {
 }
 
 type procs struct {
-  m sync.Mutex
-  running map[string]*feed
+	m       sync.Mutex
+	running map[string]*feed
 }
 
 var feeds = &procs{
-  running: make(map[string]*feed),
+	running: make(map[string]*feed),
 }
 
 func (f *feed) close(msg string) {
@@ -106,7 +106,7 @@ func (f *feed) run() {
 
 		for _, content := range bucket.Contents {
 			f.contents <- content
-      FeedCounters.Add(f.key(), 1)
+			FeedCounters.Add(f.key(), 1)
 		}
 
 		f.marker = bucket.Contents[len(bucket.Contents)-1].Key
@@ -116,24 +116,24 @@ func (f *feed) run() {
 }
 
 func (f *feed) key() string {
-  return f.bucket + "/" + f.id
+	return f.bucket + "/" + f.id
 }
 
 func (p *procs) join(bucketName, jobId string) *feed {
 	p.m.Lock()
 	defer p.m.Unlock()
 
-  var (
-    started, proto *feed
-    ok bool
-  )
+	var (
+		started, proto *feed
+		ok             bool
+	)
 
-  proto = &feed{
-    id:       jobId,
-    proto:    "https",
-    bucket:   bucketName,
-    contents: make(chan Content, maxKeys*2), // avoid partial initialization
-  }
+	proto = &feed{
+		id:       jobId,
+		proto:    "https",
+		bucket:   bucketName,
+		contents: make(chan Content, maxKeys*2), // avoid partial initialization
+	}
 
 	if started, ok = p.running[proto.key()]; !ok {
 		started, p.running[proto.key()] = proto, proto
@@ -153,11 +153,11 @@ func consume(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-  max, err := strconv.ParseUint(r.URL.Query().Get("max"), 10, 0)
-  if err != nil {
-    max = math.MaxUint64
-  }
-  
+	max, err := strconv.ParseUint(r.URL.Query().Get("max"), 10, 0)
+	if err != nil {
+		max = math.MaxUint64
+	}
+
 	feed := feeds.join(parts[1], parts[2])
 
 	enc := json.NewEncoder(w)
@@ -171,10 +171,10 @@ func consume(w http.ResponseWriter, r *http.Request) {
 
 		delivered += 1
 
-    max -= 1
-    if max <= 0 {
-      break
-    }
+		max -= 1
+		if max <= 0 {
+			break
+		}
 	}
 
 	if delivered == 0 && feed.msg != "" {
@@ -183,6 +183,6 @@ func consume(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-  flag.Parse()
+	flag.Parse()
 	log.Fatal(http.ListenAndServe(*listen, http.HandlerFunc(consume)))
 }
