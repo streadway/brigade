@@ -7,7 +7,7 @@ Demultiplexes an S3 bucket listing across multiple consumers in order to paralle
 ```sh
 ./brigade --http :8080
 
-job=`date +%s` # increment for a new run, can be anything unique
+job=`date +%s` # can be anything unique
 for host in hostA hostB hostC; do
   ssh $host -- curl "http://`hostname`:8080/your-bucket-name/$job" | process-bucket-keys" &
 done
@@ -26,8 +26,8 @@ All items are delivered when the transport is closed.
 
 A new listing will begin with every unique job.
 
-```
-GET /BUCKET/JOB?max=10000 HTTP/1.1
+```http
+GET /BUCKET/JOB?max=1000 HTTP/1.1
 Host: brigade
 
 HTTP/1.1 200 OK
@@ -39,10 +39,24 @@ Transfer-Encoding: chunked
 {...}x998
 ```
 
+```http
+GET /BUCKET/JOB HTTP/1.1
+Host: brigade
+
+HTTP/1.1 200 OK
+Content-Type: text/json
+Transfer-Encoding: chunked
+
+{...}
+{...}
+{...}xuntil bucket is finished listing
+```
+
+
 Stream is complete, no more items to list, does not contain a payload
 
-```
-GET /BUCKET/JOB/CLIENT HTTP/1.1
+```http
+GET /BUCKET/JOB HTTP/1.1
 Host: Brigade
 
 HTTP/1.1 200
@@ -50,8 +64,8 @@ HTTP/1.1 200
 
 Missing bucket or other failure
 
-```
-GET /MISSING-BUCKET/JOB/CLIENT HTTP/1.1
+```http
+GET /MISSING-BUCKET/JOB HTTP/1.1
 Host: Brigade
 
 HTTP/1.1 410
