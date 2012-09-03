@@ -4,7 +4,14 @@ Demultiplexes an S3 bucket listing across multiple consumers in order to paralle
 
 # Usage
 
+```
 ./brigade --http :8080
+
+job=`date +%s` # increment for a new run, can be anything unique
+for host in hostA hostB hostC; do
+  ssh $host -- curl "http://`hostname`:8080/your-bucket-name/$job" | process-bucket-keys" &
+done
+```
 
 # Requests
 
